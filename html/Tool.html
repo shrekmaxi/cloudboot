@@ -1,0 +1,102 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="gb2312">
+<head>
+<title>Image Store</title>
+<link rel="stylesheet" href="./main.css" type="text/css" media="all" />
+<link rel="stylesheet" type="text/css" href="cssform.css" />
+<link href="menu.css" rel="stylesheet" type="text/css">
+<script type="text/javascript" src="jquery-1.3.2.min.js"></script>
+<script type="text/javascript" src="jquery.json-2.2.min.js"></script>
+<script type="text/javascript" src="cookies.js"></script> 
+<meta http-equiv="content-type" content="text/html; charset=gb2312" />
+<META NAME="ROBOTS" CONTENT="NOINDEX,NOFOLLOW" />
+         
+<script type="text/javascript"> 
+function reboot()
+{
+  if(window.confirm("are you sure to submit?")==true)
+  {
+    var timestamp = (new Date()).getTime()
+	  $("#taskinfo_message").load("cgi/reboot?"+timestamp);
+  }
+  else
+  {
+    //
+  }
+}	
+
+function installagent()
+{
+  if(window.confirm("are you sure to submit?")==true)
+  {
+	  var timestamp = (new Date()).getTime()
+	  $("#taskinfo_message").load("cgi/installagent?"+timestamp);
+  }
+  else
+  {
+    //
+  }	
+
+}
+function repairagent()
+{
+  if(window.confirm("are you sure to submit?")==true)
+  {
+	  var timestamp = (new Date()).getTime()
+	  $("#taskinfo_message").load("cgi/repairagent?"+timestamp);
+  }
+  else
+  {
+    //
+  }		
+
+}
+function installgrub()
+{
+  if(window.confirm("are you sure to submit?")==true)
+  {
+	  var timestamp = (new Date()).getTime()
+	  $("#taskinfo_message").load("cgi/installgrub?"+timestamp);
+  }
+  else
+  {
+    //
+  }			
+}
+
+$(document).ready(function() { 
+	  /*tony add, check cookies and judge user is logging or not*/
+	  checkCookie();	
+//	for list image
+	;
+}); 
+
+</script> 
+
+</head>
+
+<body>
+<div id="output1"></div>
+<div id="content">
+  <div class="nav" id="mainnav">
+    <ul>
+      <li><a href="/VMInfo.html">PCInfo</a></li>
+      <li><a href="/EditMeta.html">Edit Meta</a></li>
+      <li><a href="/MakeImage.html">Create Image</a></li>
+      <li><a href="/InstallImage.html">Install Image</a></li>
+      <li class="active"><a href="/Tool.html" onclick="reboot()">Tools</a></li>
+	  <li><a href="/Register.html">Activate</a></li>
+    </ul>
+  </div>
+  <div id="statusblock">
+    <div style="clear:both">
+	<button onclick="reboot()">Reboot</button>
+	<button onclick="installagent()">Install Agent</button>
+	<button onclick="installgrub()">Install Grub</button>
+	<button onclick="repairagent()">Repair Agent</button>
+	</div>
+	<div id="taskinfo_message"></div>
+  </div>
+</div>
+</body>
+</html>

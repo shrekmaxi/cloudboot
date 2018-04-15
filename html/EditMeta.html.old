@@ -1,0 +1,565 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="gb2312">
+<head>
+<title>Image Store</title>
+<link rel="stylesheet" href="./main.css" type="text/css" media="all" />
+<link rel="stylesheet" type="text/css" href="cssform.css" />
+<link href="menu.css" rel="stylesheet" type="text/css">
+<style>
+	.fm-item cite{width: 150px;padding: 0 1em;text-align: right;position:absolute;font-style:normal;font-weight:bold;}
+	.fm-item ins{margin-left:170px;display:block;font-style:normal;text-decoration:none;}
+	.fm-item ins.radio input{width:auto;padding:0;border:none;}
+	.fm-item label{float:none;padding:0;width:auto;text-align:left;}
+	.list table{border:#ccc 1px solid;border-collapse:collapse;}
+	.list table td{border:#ccc 1px solid;padding:2px 5px;}
+	.list table th{border:#ccc 1px solid;padding:2px 5px;text-align:center;}
+	textarea{font-size:12px;}
+</style>
+<script type="text/javascript" src="jquery-1.3.2.min.js"></script>
+<script type="text/javascript" src="jquery.json-2.2.min.js"></script>
+<script type="text/javascript" src="jquery.progressbar.min.js"></script>
+<script type="text/javascript" src="cookies.js"></script> 
+<script type="text/javascript"> 
+$.fn.GroupBy = function(attr){
+	var dlist={},key,i,k,o;
+	attr = attr || "dom";
+	for(i=0,k=this.length;i<k;i++){
+		o = this[i];
+		key = o.getAttribute(attr);
+		 if(key) {
+			if (dlist[key]) {
+				dlist[key].push(o);
+			} else {
+				dlist[key] = [o];
+			}
+		}
+	}
+	return dlist;
+};
+$.fn.serializeObject = function(){
+    var o = {};
+    var a = this.serializeArray();
+    $.each(a, function() {
+        if (o[this.name]) {
+            if (!o[this.name].push) {
+                o[this.name] = [o[this.name]];
+            }
+            o[this.name].push(this.value || '');
+        } else {
+            o[this.name] = this.value || '';
+        }
+    });
+    return o;
+};
+function formatString(source, params, splitter) {
+	if(!splitter){splitter = ["{","}"];}
+	var re = new RegExp("\\"+splitter[0]+"([^\\"+splitter[0]+"\\"+splitter[1]+"]*)\\"+splitter[1],"g");
+	var subReplace = function (template, o) {
+		return template.replace(re, function (a, b) {
+			var r = o[b];
+			return (r !== undefined) ? r : a;
+		}
+		);
+	};
+	if (re.test(source)) { source = subReplace(source, params); }
+	return source;
+}
+function fillFields (els, data, disabled) {
+	var key, i, el, tls, disb, tagName, value, k, ii, iilen, tmp, len;
+	disabled = disabled || {};
+	for (key in disabled) {
+		tls = els[key];
+		disb = disabled[key];
+		if (tls) {
+			for (i in tls) {
+				el = tls[i];
+				tagName = el.tagName.toLowerCase();
+				switch (tagName) {
+					case 'input':
+						el.disabled = disb;
+						break;
+					case 'textarea':
+						el.disabled = disb;
+						break;
+					case 'select':
+						el.disabled = disb;
+						break;
+					default:
+						if (disb) {
+							$(el).addClass("disabled");
+						} else {
+							$(el).removeClass("disabled");
+						}
+				}
+			}
+		}
+	}
+	for (key in data) {
+		value = data[key];
+		tls = els[key];
+		if (tls) {
+			for (i in tls) {
+				el = tls[i];
+				tagName = el.tagName.toLowerCase();
+				switch (tagName) {
+					case 'a':
+						el.href = value;
+						break;
+					case 'img':
+						el.src = value;
+						break;
+					case 'textarea':
+						el.value = value;
+						break;
+					case 'select':
+						$(el).val(value);
+						break;
+					case 'input':
+						switch (el.type) {
+							case 'radio':
+								el.checked = (el.value == value) ? true : false;
+								break;
+							case 'checkbox':
+								if (typeof value != 'object') {
+									el.checked = (el.value == value) ? true : false;
+								} else {
+									if (!value) { value = []; }
+									tmp = false;
+									for (i = 0, len = value.length; i < len; i++) {
+										if (el.value == value[i]) { tmp = true; break; }
+									}
+									el.checked = tmp;
+								}
+								break;
+							default:
+								el.value = value;
+								break;
+						}
+						break;
+					default:
+						el.innerHTML = value;
+				}
+			}
+		}
+	}
+}
+function encodeData(o){
+	var data = {};
+	var arr,item;
+	for(var key in o){
+		arr = key.split("-");
+		if(arr[0]=="common"){
+			item = data;
+		}else{
+			if(!data[arr[0]]){data[arr[0]] = {};}
+			item = data[arr[0]];
+		}			
+		item[arr[1]] = o[key];
+	}
+	return data;
+}
+function decodeData(o){
+	var data = {};
+	var item,name,key;
+	for(key in o){
+		item = o[key];
+		if(key=="uuid"||key=="version"||key=="appconfig_info"){
+			data["common-"+key] = item;
+		}else{
+			for(name in item){
+				data[key+"-"+name] = item[name];
+			}
+		}
+	}
+	return data;
+}
+function fillMetaAppList(arr){
+	var html = [];
+	for(var i=0,k=arr.length; i<k; i++){
+		arr[i].index = i+1;
+		var item = formatString(StrMetaAppListItem, arr[i]);
+		html.push(item);
+	}
+	metaAppList.html(html.join(""));
+}
+function openAppInfo(n){
+	if(n==0){
+		var data = {
+			"index": "0",
+            "name": "",
+			"vender": "",
+            "description": "",
+            "owner": "",
+            "appname": "",
+            "version": "",
+            "appid": "",
+            "configuration":[]
+        };
+	}else{
+		var data = metaData["common-appconfig_info"][n-1];
+	}
+	appData = {};
+	for(var key in data){
+		appData[key] = data[key];
+	}
+	delete appData.configuration;
+	autoNum = 0;
+	var arr = [];
+	for(var i=0,k=data["configuration"].length;i<k;i++){
+		autoNum ++;
+		var args = data["configuration"][i];
+		var tag = "args-"+autoNum+"-";
+		for(key in args){
+			appData[tag+key] = args[key];
+		}
+		arr.push(formatString(StrConfigurationItem,{tag:tag}));
+	}
+	//
+	
+	$("#fm-meta-app-configuration").html(arr.join(""));
+	fillFields($("input,select,textarea",metaAppForm).GroupBy("name"), appData);
+	$("#fm-meta").hide();
+	$("#fm-meta-app").show();
+}
+function delAppInfo(n){
+	metaData["common-appconfig_info"].splice(n-1,1);
+	fillMetaAppList(metaData["common-appconfig_info"]);
+}
+function newConfiguration(n){
+	autoNum++;
+	var tag = "args-"+autoNum+"-";
+	var str = formatString(StrConfigurationItem,{tag:tag});
+	$(str).appendTo("#fm-meta-app-configuration");
+}
+function delConfiguration(dom){
+	var parent = $(dom).closest("fieldset");
+	if(parent){
+		parent.remove();
+	}
+}
+var metaForm,metaAppForm;
+var metaEls;
+var metaAppList;
+var StrConfigurationItem = '<fieldset><legend>参数 [<a href="#" onclick="delConfiguration(this);return false;">x</a>]</legend><div class="fm-item"><cite>name:</cite><ins><input type="text" name="{tag}name" value=""/></ins></div><div class="fm-item"><cite>source:</cite><ins><select name="{tag}source"><option value="0">用户自设置</option><option value="1">vfos变量</option></select></ins></div><div class="fm-item"><cite>nullable:</cite><ins class="radio"><label><input type="radio" name="{tag}nullable" value="1" /> 是</label> <label><input type="radio" name="{tag}nullable" value="0" /> 否</label></ins></div><div class="fm-item">				<cite>type:</cite><ins><select name="{tag}type"><option value="string">string</option><option value="number">number</option></select></ins>			</div><div class="fm-item"><cite>description:</cite><ins><input type="text" name="{tag}description" value=""/></ins></div></fieldset>';
+var StrMetaAppListItem = '<tr><td>{index}</td><td>{name}</td><td>{vender}</td><td>{appid}</td><td>{version}</td><td><a href="#" onclick="openAppInfo({index});return false;">Edit</a>　<a href="#" onclick="delAppInfo({index});return false;">Del</a></td></tr>';
+var metaData,appData,autoNum=0;
+$(document).ready(function() { 
+	checkCookie();
+	metaForm = $("#fm-meta");
+	metaAppForm = $("#fm-meta-app");
+	metaEls = $("input,select,textarea",metaForm).GroupBy("name");
+	metaAppList = $("#meta-app-list");
+	
+	$.getJSON("cgi/editMate",function(o){
+		metaData = decodeData(o);
+		fillFields(metaEls, metaData);
+		fillMetaAppList(metaData["common-appconfig_info"]);
+	});
+	metaForm.bind("submit",function(e){
+		var data = encodeData($(this).serializeObject());
+		data["appconfig_info"] = metaData["common-appconfig_info"];
+		var str = $.toJSON(data);
+		$.post("cgi/editMate",{meta:str},function(s){
+			alert(s);
+		});
+		return false;
+	});
+	metaAppForm.bind("submit",function(e){
+		var o = $(this).serializeObject();
+		var data = {configuration:[]};
+		var args = data.configuration;
+		for(var key in o){
+			var arr = key.split("-");
+			if(arr[0] == "args"){
+				if(!args[arr[1]]){
+					args[arr[1]] = {}
+				}
+				args[arr[1]][arr[2]] = o[key];
+			}else{
+				data[key] = o[key];
+			}
+		}
+		data.configuration = [];
+		for(key in args){
+			if(args[key]){data.configuration.push(args[key]);}
+		}
+		if(data.index==0){
+			metaData["common-appconfig_info"].push(data);
+			data.index = metaData["common-appconfig_info"].length;
+		}else{
+			metaData["common-appconfig_info"][data.index-1] = data;
+		}
+		fillMetaAppList(metaData["common-appconfig_info"]);
+		$("#fm-meta").show();
+		$("#fm-meta-app").hide();
+		return false;
+	});
+}); 
+
+
+
+</script>
+<meta http-equiv="content-type" content="text/html; charset=gb2312" />
+<META NAME="ROBOTS" CONTENT="NOINDEX,NOFOLLOW" />
+</head>
+<body>
+<div id="output1"></div>
+<div id="content">
+  <div class="nav" id="mainnav">
+    <ul>
+      <li><a href="/VMInfo.html">PCInfo</a></li>
+	<li class="active"><a href="/EditMeta.html">Edit Meta</a></li>
+      <li><a href="/MakeImage.html">Create Image</a></li>
+      <li><a href="/InstallImage.html">Install Image</a></li>
+      <li><a href="/Tool.html">Tools</a></li>
+	  <li><a href="/Register.html">Activate</a></li>
+    </ul>
+  </div>
+
+  <div id="mainform">
+    
+    <p id="fm-intro">Fields in <strong>bold</strong> are required.</p>
+    <form action="#" method="post" id="fm-meta">
+		<fieldset>
+			<legend>基本</legend>
+			<div class="fm-item">
+				<cite>uuid:</cite>
+				<ins><input type="text" name="common-uuid" value=""/></ins>
+			</div>
+			<div class="fm-item">
+				<cite>version:</cite>
+				<ins><input type="text" name="common-version" value=""/></ins>
+			</div>
+		</fieldset>
+		<fieldset>
+			<legend>简述</legend>
+			<div class="fm-item">
+				<cite>name:</cite>
+				<ins><input type="text" name="summary-name" value=""/></ins>
+			</div>
+			<div class="fm-item">
+				<cite>remark:</cite>
+				<ins><input type="text" name="summary-remark" value=""/></ins>
+			</div>
+			<div class="fm-item">
+				<cite>producer:</cite>
+				<ins><input type="text" name="summary-producer" value=""/></ins>
+			</div>
+			<div class="fm-item">
+				<cite>production_date:</cite>
+				<ins><input type="text" name="summary-production_date" value=""/></ins>
+			</div>
+			<div class="fm-item">
+				<cite>production_addr:</cite>
+				<ins><input type="text" name="summary-production_addr" value=""/></ins>
+			</div>
+			<div class="fm-item">
+				<cite>creator:</cite>
+				<ins><input type="text" name="summary-creator" value=""/></ins>
+			</div>
+		</fieldset>
+		<fieldset>
+			<legend>类型</legend>
+			<div class="fm-item">
+				<cite>format:</cite>
+				<ins><select name="type-format"><option value="1">简单模板</option><option value="2">vfos模板</option><option value="3">XCP模板</option></select></ins>
+			</div>
+			<div class="fm-item">
+				<cite>is_basic:</cite>
+				<ins class="radio"><label><input type="radio" name="type-is_basic" value="1" /> 是</label> <label><input type="radio" name="type-is_basic" value="0" /> 否</label></ins>
+			</div>
+			<div class="fm-item">
+				<cite>parent_uuid:</cite>
+				<ins><input type="text" name="type-parent_uuid" value=""/></ins>
+			</div>
+		</fieldset>
+		<fieldset>
+			<legend>模板虚拟化平台</legend>
+			<div class="fm-item">
+				<cite>create_hv:</cite>
+				<ins><select name="hv_info-create_hv"><option value="XCP">XCP</option><option value="ICP">ICP</option><option value="XEN">XEN</option><option value="CCP">CCP</option><option value="VMWARE">VMWARE</option><option value="KVM">KVM</option><option value="VBOX">VBOX</option><option value="HYPERV">HYPERV</option></select></ins>
+			</div>
+			<div class="fm-item">
+				<cite>virtual_type:</cite>
+				<ins class="radio"><label><input type="radio" name="hv_info-virtual_type" value="full" /> 全虚拟</label> <label><input type="radio" name="hv_info-virtual_type" value="para" /> 半虚拟</label></ins>
+			</div>
+			<div class="fm-item">
+				<cite>support_hv:</cite>
+				<ins><select name="hv_info-support_hv" size="5" multiple="MULTIPLE"><option value="XCP">XCP</option><option value="ICP">ICP</option><option value="XEN">XEN</option><option value="CCP">CCP</option><option value="VMWARE">VMWARE</option><option value="KVM">KVM</option><option value="VBOX">VBOX</option><option value="HYPERV">HYPERV</option></select></ins>
+			</div>
+		</fieldset>
+		<fieldset>
+			<legend>模板文件</legend>
+			<div class="fm-item">
+				<cite>file:</cite>
+				<ins><input type="text" name="image-file" value=""/></ins>
+			</div>
+			<div class="fm-item">
+				<cite>md5:</cite>
+				<ins><input type="text" name="image-md5" value=""/></ins>
+			</div>
+			<div class="fm-item">
+				<cite>patch_file:</cite>
+				<ins><input type="text" name="image-patch_file" value=""/></ins>
+			</div>
+			<div class="fm-item">
+				<cite>data_type:</cite>
+				<ins class="radio"><label><input type="radio" name="image-data_type" value="block" /> 物理扇区数据级别</label> <label><input type="radio" name="image-data_type" value="file" /> 文件级别</label></ins>
+			</div>
+		</fieldset>
+		<fieldset>
+			<legend>使用要求</legend>
+			<div class="fm-item">
+				<cite>disk_size:</cite>
+				<ins><input type="text" name="hw_requirment-disk_size" value=""/></ins>
+			</div>
+			<div class="fm-item">
+				<cite>cpu_num:</cite>
+				<ins><input type="text" name="hw_requirment-cpu_num" value=""/></ins>
+			</div>
+			<div class="fm-item">
+				<cite>memory_size:</cite>
+				<ins><input type="text" name="hw_requirment-memory_size" value=""/>(MB)</ins>
+			</div>
+		</fieldset>
+		<fieldset>
+			<legend>提供的api</legend>
+			<div class="fm-item">
+				<cite>is_existed:</cite>
+				<ins class="radio"><label><input type="radio" name="api-is_existed" value="1" /> 是</label> <label><input type="radio" name="api-is_existed" value="0" /> 否</label></ins>
+			</div>
+			<div class="fm-item">
+				<cite>type:</cite>
+				<ins><select name="api-type"><option value="rpc">rpc</option><option value="restful">restful</option><option value="soap">soap</option></select></ins>
+			</div>
+			<div class="fm-item">
+				<cite>version:</cite>
+				<ins><input type="text" name="api-version" value=""/></ins>
+			</div>
+			<div class="fm-item">
+				<cite>remark:</cite>
+				<ins><textarea name="api-remark"></textarea></ins>
+			</div>
+		</fieldset>
+		<fieldset>
+			<legend>VFOS Guestos Agent</legend>
+			<div class="fm-item">
+				<cite>is_existed:</cite>
+				<ins class="radio"><label><input type="radio" name="guestos_agent-is_existed" value="1" /> 是</label> <label><input type="radio" name="guestos_agent-is_existed" value="0" /> 否</label></ins>
+			</div>
+			<div class="fm-item">
+				<cite>version:</cite>
+				<ins><input type="text" name="guestos_agent-version" value=""/></ins>
+			</div>
+			<div class="fm-item">
+				<cite>remark:</cite>
+				<ins><textarea name="guestos_agent-remark"></textarea></ins>
+			</div>
+		</fieldset>
+		<fieldset>
+			<legend>OS信息</legend>
+			<div class="fm-item">
+				<cite>type:</cite>
+				<ins><select name="os_info-type"><option value="windows">windows</option><option value="linux">linux</option><option value="unix">unix</option></select></ins>
+			</div>
+			<div class="fm-item">
+				<cite>author:</cite>
+				<ins><input type="text" name="os_info-author" value=""/></ins>
+			</div>
+			<div class="fm-item">
+				<cite>name:</cite>
+				<ins><input type="text" name="os_info-name" value=""/></ins>
+			</div>
+			<div class="fm-item">
+				<cite>version_name:</cite>
+				<ins><input type="text" name="os_info-version_name" value=""/></ins>
+			</div>
+			<div class="fm-item">
+				<cite>version_number:</cite>
+				<ins><input type="text" name="os_info-version_number" value=""/></ins>
+			</div>
+			<div class="fm-item">
+				<cite>build_number:</cite>
+				<ins><input type="text" name="os_info-build_number" value=""/></ins>
+			</div>
+			<div class="fm-item">
+				<cite>sp_number:</cite>
+				<ins><input type="text" name="os_info-sp_number" value=""/></ins>
+			</div>
+			<div class="fm-item">
+				<cite>platform_bit:</cite>
+				<ins class="radio"><label><input type="radio" name="os_info-platform_bit" value="32" /> 32bit</label> <label><input type="radio" name="os_info-platform_bit" value="64" /> 64bit</label></ins>
+			</div>
+			<div class="fm-item">
+				<cite>lauguage:</cite>
+				<ins><select name="os_info-lauguage"><option value="en">en</option><option value="cn">cn</option><option value="hk">hk</option><option value="tw">tw</option><option value="jp">jp</option></select></ins>
+			</div>
+		</fieldset>
+		<fieldset>
+			<legend>配制App信息</legend>
+			<div class="list">
+				<div style="padding-bottom:5px;text-align:right;"><a href="#" onclick="openAppInfo(0);return false;">新增配制</a></div>
+				<table width="100%">
+					<thead>
+						<tr><th width="2"></th><th>App</th><th>Vender</th><th>AppID</th><th>Version</th><th>Action</th></tr>
+					</thead>
+					<tbody id="meta-app-list">
+						
+					</tbody>
+				</table>
+			</div>
+		</fieldset>
+		<div class="fm-req" id="fm-submit">
+			<input type="submit" value="提交">
+		</div>
+    </form>
+	
+	<form id="fm-meta-app" style="display:none;">
+		<fieldset>
+			<legend>需配置的App</legend>
+			<input type="hidden" name="index" value="0" />
+			<div class="fm-item">
+				<cite>app:</cite>
+				<ins><input type="text" name="name" value=""/></ins>
+			</div>
+			<div class="fm-item">
+				<cite>vender:</cite>
+				<ins><input type="text" name="vender" value=""/></ins>
+			</div>
+			<div class="fm-item">
+				<cite>description:</cite>
+				<ins><input type="text" name="description" value=""/></ins>
+			</div>
+			<div class="fm-item">
+				<cite>owner:</cite>
+				<ins><input type="text" name="owner" value=""/></ins>
+			</div>
+			<div class="fm-item">
+				<cite>appname:</cite>
+				<ins><input type="text" name="appname" value=""/></ins>
+			</div>
+			<div class="fm-item">
+				<cite>version:</cite>
+				<ins><input type="text" name="version" value=""/></ins>
+			</div>
+			<div class="fm-item">
+				<cite>appid:</cite>
+				<ins><input type="text" name="appid" value=""/></ins>
+			</div>
+			<div class="fm-item">
+				<cite>configuration:</cite>
+				<ins><a href="#" onclick="newConfiguration();return false;">新增参数</a></ins>
+			</div>
+			
+		</fieldset>
+		<div id="fm-meta-app-configuration">
+		</div>
+		<div class="fm-req" id="fm-submit">
+			<input type="submit" value="确定"> <input type="submit" value="返回" onclick='$("#fm-meta").show();
+	$("#fm-meta-app").hide();return false;'>
+		</div>
+	</form>
+  </div>
+</div>
+</body>
+</html>

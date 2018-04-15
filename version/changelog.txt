@@ -1,0 +1,10 @@
+Change Log with Cloudboot_2.0.0_build_059 by 2012/08/27
+1) 2.0版本的模板文件：Partition2.img、Patch.tar.gz、meta
+2) 根据不同的不同OS生成对应的patch.tar.gz
+3) 包含了模板的各种信息（主要是OS 和appconfig信息）。详细信息见模板定义说明文档，通过界面填写可以在meta中生成appconfig文件。
+4) 模板安装：可安装ftp上面的模板，也可安装ts 上面的模板(TS的模板必须传入URL参数)
+5) Appconfig信息现在保持在v2.0模板的meta文件中，制作模板的时候需要通过CB CGI页面设置appconfig信息；而使用安装模板的时候需要根据appconfig来配置参数。
+6) 增加了CreateImage接口。
+7) 增加了版本号查看命:cloudboot -h
+8) 修复了更改密码
+9) 添加子模板功能

@@ -1,0 +1,120 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="gb2312">
+<head>
+<title>login</title>
+<link rel="stylesheet" href="./main.css" type="text/css" media="all" />
+<link rel="stylesheet" type="text/css" href="cssform.css" />
+<link href="menu.css" rel="stylesheet" type="text/css">
+<script language="JavaScript" type="text/javascript" src="cssform.js"></script>
+<script type="text/javascript" src="jquery-1.3.2.min.js"></script> 
+<script type="text/javascript" src="jquery.json-2.2.min.js"></script> 
+<script type="text/javascript" src="jquery.form.js"></script> 
+<script type="text/javascript" src="jquery.progressbar.min.js"></script> 
+<script type="text/javascript" src="cookies.js"></script> 
+  
+<script type="text/javascript"> 
+  var user = "";
+  var pass = "";
+    
+  $(document).ready(function() {	
+  	
+    var loginoptions = { 
+      success: function showResponse(data){
+      	if (0==data.result)
+      	{
+	        if(data.message=="ok!"){
+	        	$.each(data["return"],function(i,img){
+		        	/*setcookie*/
+		        	//alert($.toJSON(img));
+		        	setCookie("uuid",img);         	
+	        	});
+	        	
+	          $("#confirm").text("User and passwor is valid, now Logging...");
+	          redirect()
+	        }else {
+	          $("#confirm").text("No user or password is invalid!");
+	        }        		
+      	}
+      	else
+        {
+        	alert(data.message);
+        }
+      },
+      url:       		"cgi/login",
+      dataType: 		'json',
+      timeout:   		38000
+    };    
+    
+    $("#loginform").submit(function() {
+   	    var result = login();
+   	    if (false == result)
+   	    {
+   	    	return false;
+   	    }
+   	    else
+   	    {
+   	    	//alert("success"); 	    	
+   	    }
+        //encode user and password
+        var uuid=new UUID().id;
+        var encodeuser = encrypt(user,uuid);
+        var encodepasswd = encrypt(pass,uuid);
+        var encodeuuid = base64encode(uuid);
+        
+        //$("#user").val()=""
+        //$("#pass").val()=""
+
+   	    serializeobj={"user":encodeuser, "pass":encodepasswd, "uuid":encodeuuid};
+   	    
+ 		    loginoptions['data']={jsonform: $.toJSON(serializeobj)};
+ 		    //loginoptions['data']={jsonform:  $.toJSON($('#loginform').serializeObject())};
+        $(this).ajaxSubmit( loginoptions ); 
+   	    
+
+        return false;
+    }); 
+  });     
+     
+  function login()
+  {
+  	user = $("#user").val();
+    pass = $("#pass").val();   
+  	
+    if (user == "")
+    {
+      $("#confirm").text("Please enter your user name");
+      $("#user").focus();
+      return false;
+    }
+    if(pass == "")
+    {
+      $("#confirm").text("Please enter your password");
+      $("#pass").focus();
+      return false;
+    }
+        
+    return true;
+  }
+
+   
+</script>
+</head>
+
+<body>
+  <h3> Cloudboot Admin </h3>
+  <div id="login">
+    <form method="post" action="cgi/login" id="loginform" name="loginform">
+      <ul>
+        <li>USER&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp<input type="text" name="user" id="user" size="16" maxlength="20"></li>
+        <br>
+        <li>PASSWORD&nbsp&nbsp<input type="password" name="pass" id="pass" size="16" maxlength="20"></li>
+        <br>
+        <input type="submit" style="border:0" value="Submit"/>    
+        <br>    
+        <lable id="confirm"></lable>
+      </ul>
+    </form>
+  </div>
+</body>
+</html>
+

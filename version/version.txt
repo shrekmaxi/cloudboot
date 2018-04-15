@@ -1,0 +1,7 @@
+name          : cloudboot
+version_number: 2.0.0
+build_number  : 063
+virtual_type  : hvm 
+support_hv    : VMWARE,XEN,ICP,CCP,KVM,XCP
+platform_bit  : 64bit
+data          : 2012-09-04
